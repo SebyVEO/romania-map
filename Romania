@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>România - Joc de Teritorii</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    display:flex;
+    height:100vh;
+}
+
+#left{
+    width:300px;
+    background:#1e1e1e;
+    color:white;
+    padding:15px;
+}
+
+#mapArea{
+    flex:1;
+    position:relative;
+    overflow:hidden;
+}
+
+#bg{
+    width:100%;
+    user-select:none;
+}
+
+canvas{
+    position:absolute;
+    top:0;
+    left:0;
+}
+
+button,input{
+    width:100%;
+    margin-top:10px;
+    padding:10px;
+}
+</style>
+</head>
+<body>
+
+<div id="left">
+<h2>Control</h2>
+
+<input type="color" id="color" value="#ff0000">
+<input type="text" id="name" placeholder="Nume județ">
+
+<button onclick="finishZone()">Finalizează zonă</button>
+<button onclick="clearLast()">Undo punct</button>
+<button onclick="save()">Salvează</button>
+<button onclick="load()">Încarcă</button>
+</div>
+
+<div id="mapArea">
+<img id="bg" src="harta-romaniei.jpg">
+<canvas id="canvas"></canvas>
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let points = [];
+let zones = [];
+
+function resize(){
+    canvas.width = document.getElementById("bg").clientWidth;
+    canvas.height = document.getElementById("bg").clientHeight;
+}
+window.onload = resize;
+window.onresize = resize;
+
+document.getElementById("mapArea").addEventListener("click", e=>{
+    const rect = canvas.getBoundingClientRect();
+    points.push({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    });
+    draw();
+});
+
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    zones.forEach(z=>{
+        ctx.fillStyle = z.color;
+        ctx.globalAlpha = 0.4;
+        ctx.beginPath();
+        z.points.forEach((p,i)=>{
+            if(i==0) ctx.moveTo(p.x,p.y);
+            else ctx.lineTo(p.x,p.y);
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    });
+
+    ctx.globalAlpha = 1;
+
+    if(points.length){
+        ctx.beginPath();
+        points.forEach((p,i)=>{
+            if(i==0) ctx.moveTo(p.x,p.y);
+            else ctx.lineTo(p.x,p.y);
+        });
+        ctx.strokeStyle="red";
+        ctx.stroke();
+    }
+}
+
+function finishZone(){
+    zones.push({
+        name:document.getElementById("name").value,
+        color:document.getElementById("color").value,
+        points:[...points]
+    });
+    points=[];
+    draw();
+}
+
+function clearLast(){
+    points.pop();
+    draw();
+}
+
+function save(){
+    localStorage.setItem("romania", JSON.stringify(zones));
+}
+
+function load(){
+    zones = JSON.parse(localStorage.getItem("romania")||"[]");
+    draw();
+}
+</script>
+
+</body>
+</html>
